@@ -63,8 +63,19 @@ def print_pid2traffic(upload_threshold):
             create_time = datetime.fromtimestamp(p.create_time())
         except OSError:
             create_time = datetime.fromtimestamp(psutil.boot_time())
-        upload_speed = traffic[0] - global_df.at[pid, "Upload"] if global_df is not None else traffic[0]
-        download_speed = traffic[1] - global_df.at[pid, "Download"] if global_df is not None else traffic[1]
+        
+        # Initialize upload and download speeds
+        upload_speed = 0
+        download_speed = 0
+
+        # Check if the PID exists in the global DataFrame and calculate speeds
+        if global_df is not None and pid in global_df.index:
+            upload_speed = traffic[0] - global_df.at[pid, "Upload"]
+            download_speed = traffic[1] - global_df.at[pid, "Download"]
+        else:
+            upload_speed = traffic[0]
+            download_speed = traffic[1]
+
         if upload_speed >= upload_threshold:
             process = {
                 "pid": pid, "name": name, "create_time": create_time, "Upload": traffic[0],
