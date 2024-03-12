@@ -39,12 +39,14 @@ def get_all_processes():
     for process in psutil.process_iter(['pid', 'name']):
         try:
             cpu_percent_per_core = get_cpu_percent_per_core(process)
+            # Convert memory usage to MB
+            memory_usage_mb = process.memory_info().rss / (1024 * 1024)
             traffic = pid2traffic.get(process.pid, [0, 0])
             processes.append({
                 'pid': process.pid,
                 'name': process.name(),
                 'cpu_percent': cpu_percent_per_core,
-                'memory_percent': process.memory_percent(),
+                'memory_usage_mb': memory_usage_mb,  # Memory usage in MB
                 'upload': traffic[0],
                 'download': traffic[1]
             })
