@@ -64,18 +64,13 @@ def print_pid2traffic(upload_threshold):
         except OSError:
             create_time = datetime.fromtimestamp(psutil.boot_time())
         
-        # Initialize upload and download speeds
-        upload_speed = 0
-        download_speed = 0
-
-        # Check if the PID exists in the global DataFrame and calculate speeds
-        if global_df is not None and pid in global_df.index:
-            upload_speed = traffic[0] - global_df.at[pid, "Upload"]
-            download_speed = traffic[1] - global_df.at[pid, "Download"]
-        else:
-            upload_speed = traffic[0]
-            download_speed = traffic[1]
-
+        # Check if PID exists in global_df before accessing
+        upload_speed = traffic[0] - global_df.at[pid, "Upload"] if global_df is not None and pid in global_df.index else traffic[0]
+        download_speed = traffic[1] - global_df.at[pid, "Download"] if global_df is not None and pid in global_df.index else traffic[1]
+        
+        # Convert the upload and download speeds to KB/min
+        upload_speed = (upload_speed * 60) / 1024
+        download_speed = (download_speed * 60) / 1024
         if upload_speed >= upload_threshold:
             process = {
                 "pid": pid, "name": name, "create_time": create_time, "Upload": traffic[0],
@@ -91,8 +86,8 @@ def print_pid2traffic(upload_threshold):
         printing_df = df.copy()
         printing_df["Download"] = printing_df["Download"].apply(get_size)
         printing_df["Upload"] = printing_df["Upload"].apply(get_size)
-        printing_df["Download Speed"] = printing_df["Download Speed"].apply(get_size).apply(lambda s: f"{s}/s")
-        printing_df["Upload Speed"] = printing_df["Upload Speed"].apply(get_size).apply(lambda s: f"{s}/s")
+        printing_df["Download Speed"] = printing_df["Download Speed"].apply(lambda s: f"{s:.2f}KB/min")
+        printing_df["Upload Speed"] = printing_df["Upload Speed"].apply(lambda s: f"{s:.2f}KB/min")
         os.system("cls") if "nt" in os.name else os.system("clear")
         print(printing_df.to_string())
         global_df = df
@@ -106,12 +101,12 @@ def print_stats(upload_threshold):
         print_pid2traffic(upload_threshold)
 
 if __name__ == "__main__":
-    upload_threshold_kb = float(input("Enter the upload threshold (in KB/s): "))
-    upload_threshold_bytes = upload_threshold_kb * 1024  # Convert KB/s to bytes
-    printing_thread = Thread(target=print_stats, args=(upload_threshold_bytes,))
+    upload_threshold_kb_min = float(input("Enter the upload threshold (in KB/min): "))
+    upload_threshold_bytes_min = upload_threshold_kb_min * 1024 / 60  # Convert KB/min to bytes/min
+    printing_thread = Thread(target=print_stats, args=(upload_threshold_bytes_min,))
     printing_thread.start()
     connections_thread = Thread(target=get_connections)
     connections_thread.start()
     print("Started sniffing")
     sniff(prn=process_packet, store=False)
-    is_program_running = False
+    is_program_running = Fals
