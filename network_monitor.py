@@ -109,4 +109,4 @@ if __name__ == "__main__":
     connections_thread.start()
     print("Started sniffing")
     sniff(prn=process_packet, store=False)
-    is_program_running = Fals
+    is_program_running = False
