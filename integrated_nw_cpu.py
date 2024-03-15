@@ -1,12 +1,12 @@
-import os
-import math
-import time
-import psutil
 from scapy.all import *
+import psutil
 from collections import defaultdict
+import os
 from threading import Thread
 import pandas as pd
 from datetime import datetime
+import time
+import math
 
 # Get all network adapter's MAC addresses
 all_macs = {iface.mac for iface in ifaces.values()}
@@ -30,6 +30,9 @@ global_df = None
 # Global boolean for program status
 is_program_running = True
 
+# User-defined thresholds
+cpu_threshold = float(input("Enter the CPU utilization threshold (in %): "))
+ram_threshold = float(input("Enter the RAM usage threshold (in MB): "))
 
 def get_size(bytes):
     """
@@ -40,52 +43,12 @@ def get_size(bytes):
             return f"{bytes:.2f}{unit}B"
         bytes /= 1024
 
-
 def get_cpu_percent_per_core(process):
     """
     Get CPU utilization per core for a process
     """
     num_cores = psutil.cpu_count(logical=True)
     return process.cpu_percent() / num_cores
-
-
-def get_all_processes():
-    """
-    Retrieve information on all running processes with CPU usage sum updated
-    """
-    processes = []
-    for process in psutil.process_iter(['pid', 'name']):
-        try:
-            cpu_percent_per_core = get_cpu_percent_per_core(process)
-
-            # Update CPU usage sum and square sum for the process
-            pid2cpu_usage_sum[process.pid] += cpu_percent_per_core
-            pid2cpu_usage_squaresum[process.pid] += math.pow(cpu_percent_per_core, 2)
-            if int(cpu_percent_per_core) != 0:
-                pid2count[process.pid]+=1
-
-            # Handle potential division by zero with default value (0)
-            # vcount = pid2count.get(process.pid, 0)  # Get count or set to 0 if not found
-            quadratic_deviation = 0 if int(pid2count[process.pid]) == 0 else (math.pow(abs(((pid2cpu_usage_squaresum[process.pid] / pid2count[process.pid])-math.pow((pid2cpu_usage_sum[process.pid]/pid2count[process.pid]),2))),0.5))
-
-            memory_usage_mb = process.memory_info().rss / (1024 * 1024)
-            traffic = pid2traffic.get(process.pid, [0, 0])
-            processes.append({
-                'pid': process.pid,
-                'name': process.name(),
-                'cpu_percent': cpu_percent_per_core,
-                'quadratic_deviation': quadratic_deviation,
-                # 'cpu_usage_sum': pid2cpu_usage_sum[process.pid],
-                # 'cpu_usage_squaresum': pid2cpu_usage_squaresum[process.pid],
-                # 'count': pid2count[process.pid],
-                'memory_usage_mb': memory_usage_mb,
-                'upload': traffic[0],
-                'download': traffic[1]
-            })
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-    return processes
-
 
 def process_packet(packet):
     global pid2traffic
@@ -114,31 +77,62 @@ def print_stats():
     global global_df
     while is_program_running:
         time.sleep(1)
-        processes = get_all_processes()
-        df = pd.DataFrame(processes)
-        try:
-            # Sort by cpu_percent in descending order (highest first)
+        processes = []
+        for process in psutil.process_iter(['pid', 'name']):
+            try:
+                cpu_percent_per_core = get_cpu_percent_per_core(process)
+                ram_usage = process.memory_info().rss / (1024 * 1024)  # Convert to MB
+                if cpu_percent_per_core >= cpu_threshold or ram_usage >= ram_threshold:
+                    # Update CPU usage sum and square sum for the process
+                    pid2cpu_usage_sum[process.pid] += cpu_percent_per_core
+                    pid2cpu_usage_squaresum[process.pid] += math.pow(cpu_percent_per_core, 2)
+                    pid2count[process.pid] += 1
+
+                    # Calculate quadratic deviation
+                    quadratic_deviation = 0
+                    if pid2count[process.pid] > 1:
+                        mean = pid2cpu_usage_sum[process.pid] / pid2count[process.pid]
+                        squaresum_mean = pid2cpu_usage_squaresum[process.pid] / pid2count[process.pid]
+                        quadratic_deviation = math.sqrt(squaresum_mean - math.pow(mean, 2))
+
+                    traffic = pid2traffic.get(process.pid, [0, 0])
+                    upload_speed = (traffic[0] * 60) / 1024  # Convert to KB/min
+                    download_speed = (traffic[1] * 60) / 1024  # Convert to KB/min
+                    processes.append({
+                        'pid': process.pid,
+                        'name': process.name(),
+                        'cpu_percent': cpu_percent_per_core,
+                        'quadratic_deviation': quadratic_deviation,
+                        'ram_usage': ram_usage,
+                        'upload': traffic[0],
+                        'download': traffic[1],
+                        'upload_speed': upload_speed,
+                        'download_speed': download_speed
+                    })
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        if processes:
+            df = pd.DataFrame(processes)
             df.sort_values("cpu_percent", inplace=True, ascending=False)
-            df = df.set_index("pid")  # Set index to pid
-        except KeyError as e:
-            pass
-        printing_df = df.copy()
-        try:
-            printing_df["download"] = printing_df["download"].apply(get_size)
+            df = df.set_index("pid")
+            printing_df = df.copy()
             printing_df["upload"] = printing_df["upload"].apply(get_size)
-            # Convert CPU usage sum to a percentage (optional)
-            # printing_df["cpu_usage_sum"] = printing_df["cpu_usage_sum"].apply(lambda x: f"{x:.2f}%")
+            printing_df["download"] = printing_df["download"].apply(get_size)
+            printing_df["upload_speed"] = printing_df["upload_speed"].apply(lambda s: f"{s:.2f}KB/min")
+            printing_df["download_speed"] = printing_df["download_speed"].apply(lambda s: f"{s:.2f}KB/min")
             printing_df["quadratic_deviation"] = printing_df["quadratic_deviation"].apply(lambda x: f"{x:.2f}")
-        except KeyError as e:
-            pass
-        os.system("cls") if "nt" in os.name else os.system("clear")
-        print(printing_df.to_string())
-        global_df = df
+            os.system("cls") if "nt" in os.name else os.system("clear")
+            print(printing_df.to_string())
+            global_df = df
+        else:
+            print("No processes exceed the set thresholds.")
+            return
 
 if __name__ == "__main__":
     printing_thread = Thread(target=print_stats)
     printing_thread.start()
     connections_thread = Thread(target=get_connections)
+
     connections_thread.start()
     print("Started sniffing")
     sniff(prn=process_packet, store=False)
