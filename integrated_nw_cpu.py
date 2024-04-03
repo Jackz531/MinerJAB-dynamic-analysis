@@ -84,6 +84,8 @@ def get_connections():
 
 def print_stats():
     global global_df
+    # Set to keep track of logged PIDs to avoid duplicates
+    logged_pids = set()
     while is_program_running:
         time.sleep(1)
         processes = []
@@ -133,8 +135,17 @@ def print_stats():
                         'median_upload': median_upload_speed,  # Add median upload speed metric
                         'download_speed': download_speed
                     })
+                    
+                    # Log the PID of the process if CPU utilization is above the threshold and not already logged
+                    if cpu_percent_per_core >= cpu_threshold and process.pid not in logged_pids and process.pid != 0:
+                        with open("log.txt", "a") as log_file:
+                            log_file.write(f"{process.pid}\n")
+                        logged_pids.add(process.pid)
+                    
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
+        
+        # Print the DataFrame to the terminal
         if processes:
             df = pd.DataFrame(processes)
             df.sort_values("cpu_percent", inplace=True, ascending=False)
@@ -153,7 +164,6 @@ def print_stats():
             global_df = df
         else:
             print("No processes exceed the set thresholds.")
-            return
 
 if __name__ == "__main__":
     printing_thread = Thread(target=print_stats)
