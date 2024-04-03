@@ -116,7 +116,8 @@ def print_stats():
 
                     traffic = pid2traffic.get(process.pid, [0, 0])
                     upload_speed = (traffic[0] * 60) / 1024  # Convert to KB/min
-                    pid2upload_speed_values[process.pid].append(upload_speed)
+                    if upload_speed>0:
+                        pid2upload_speed_values[process.pid].append(upload_speed)
                     # Calculate median upload speed
                     median_upload_speed = np.median(pid2upload_speed_values[process.pid])
                     download_speed = (traffic[1] * 60) / 1024  # Convert to KB/min
