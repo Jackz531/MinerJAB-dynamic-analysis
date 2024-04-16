@@ -7,7 +7,14 @@ import pandas as pd
 from datetime import datetime
 import time
 import math
+import numpy as np
+import warnings
 
+
+
+# Filter out the specific RuntimeWarning
+warnings.filterwarnings("ignore", message="Mean of empty slice", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="invalid value encountered in scalar divide", category=RuntimeWarning)
 # Get all network adapter's MAC addresses
 all_macs = {iface.mac for iface in ifaces.values()}
 
@@ -21,6 +28,8 @@ pid2traffic = defaultdict(lambda: [0, 0])
 pid2cpu_usage_sum = defaultdict(int)
 # A dictionary to map each process ID (PID) to the sum of squares of CPU usage
 pid2cpu_usage_squaresum = defaultdict(int)
+pid2cpu_usage_values = defaultdict(list)
+pid2upload_speed_values = defaultdict(list)
 
 pid2count = defaultdict(int)
 
@@ -83,6 +92,16 @@ def print_stats():
         for process in psutil.process_iter(['pid', 'name']):
             try:
                 cpu_percent_per_core = get_cpu_percent_per_core(process)
+                if cpu_percent_per_core > 0:  # Only store non-zero CPU usage values
+                    pid2cpu_usage_values[process.pid].append(cpu_percent_per_core)
+
+                # Calculate median CPU usage
+                try:
+                    median_cpu_usage = np.median(pid2cpu_usage_values[process.pid])
+                except Exception as e:
+                    median_cpu_usage = np.nan  # Set median to NaN if an error occurs
+
+
                 ram_usage = process.memory_info().rss / (1024 * 1024)  # Convert to MB
                 if cpu_percent_per_core >= cpu_threshold or ram_usage >= ram_threshold:
                     # Update CPU usage sum and square sum for the process
@@ -99,16 +118,22 @@ def print_stats():
 
                     traffic = pid2traffic.get(process.pid, [0, 0])
                     upload_speed = (traffic[0] * 60) / 1024  # Convert to KB/min
+                    if upload_speed>0:
+                        pid2upload_speed_values[process.pid].append(upload_speed)
+                    # Calculate median upload speed
+                    median_upload_speed = np.median(pid2upload_speed_values[process.pid])
                     download_speed = (traffic[1] * 60) / 1024  # Convert to KB/min
                     processes.append({
                         'pid': process.pid,
                         'name': process.name(),
                         'cpu_percent': cpu_percent_per_core,
+                        'median_cpu_percent':median_cpu_usage,
                         'quadratic_deviation': quadratic_deviation,
                         'ram_usage': ram_usage,
                         'upload': traffic[0],
                         'download': traffic[1],
                         'upload_speed': upload_speed,
+                        'median_upload': median_upload_speed,  # Add median upload speed metric
                         'download_speed': download_speed
                     })
                     
@@ -132,6 +157,9 @@ def print_stats():
             printing_df["upload_speed"] = printing_df["upload_speed"].apply(lambda s: f"{s:.2f}KB/min")
             printing_df["download_speed"] = printing_df["download_speed"].apply(lambda s: f"{s:.2f}KB/min")
             printing_df["quadratic_deviation"] = printing_df["quadratic_deviation"].apply(lambda x: f"{x:.2f}")
+            printing_df["median_cpu_percent"] = printing_df["median_cpu_percent"].apply(lambda x: f"{x:.2f}")  # Format median CPU usage
+            printing_df["median_upload"] = printing_df["median_upload"].apply(lambda s: f"{s:.2f}KB/min")  # Format median upload speed
+            
             os.system("cls") if "nt" in os.name else os.system("clear")
             print(printing_df.to_string())
             global_df = df
@@ -146,4 +174,13 @@ if __name__ == "__main__":
     connections_thread.start()
     print("Started sniffing")
     sniff(prn=process_packet, store=False)
+    # is_program_running = False
+    # #stop the code and threads after 1 minute
+    time.sleep(60)
     is_program_running = False
+    printing_thread.join()
+    connections_thread.join()
+    print("Stopped sniffing")
+    # Save the collected data to a CSV file
+    global_df.to_csv('train_data.csv', index=False)
+    print("Data saved to train_data.csv")
