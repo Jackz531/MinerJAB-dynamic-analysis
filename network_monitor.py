@@ -135,6 +135,14 @@ def print_stats():
     while is_program_running:
         time.sleep(1)
         print_pid2traffic()
+    # print the final stats before exiting to nwlog.txt
+    print_pid2traffic()
+    df = global_df.copy()
+    df.to_csv("nwlog.txt")
+    print("Saved the final stats to nwlog.txt")
+    
+    
+
         
         
 
