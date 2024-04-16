@@ -41,3 +41,6 @@ print(f'Confusion Matrix:\n{conf_matrix}')
 
 # Save the test data with predictions to a new CSV file
 test_data.to_csv('test_data_with_predictions.csv', index=False)
+import subprocess
+
+subprocess.run(['python', 'terminate.py'])
