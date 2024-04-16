@@ -85,7 +85,7 @@ def get_connections():
 def print_stats():
     global global_df
     # Set to keep track of logged PIDs to avoid duplicates
-    logged_pids = set()
+    
     # save stats to int.csv afteer 40s, while the printing to console
     while is_program_running:
         time.sleep(1)
@@ -98,6 +98,8 @@ def print_stats():
     
 
 def print_statsmain():
+    global global_df
+    logged_pids = set()
     processes = []
     for process in psutil.process_iter(['pid', 'name']):
             try:
@@ -158,24 +160,24 @@ def print_statsmain():
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
         
-        if processes:
-            df = pd.DataFrame(processes)
-            df.sort_values("cpu_percent", inplace=True, ascending=False)
-            df = df.set_index("pid")
-            printing_df = df.copy()
-            printing_df["upload"] = printing_df["upload"].apply(get_size)
-            printing_df["download"] = printing_df["download"].apply(get_size)
-            printing_df["upload_speed"] = printing_df["upload_speed"].apply(lambda s: f"{s:.2f}KB/min")
-            printing_df["download_speed"] = printing_df["download_speed"].apply(lambda s: f"{s:.2f}KB/min")
-            printing_df["quadratic_deviation"] = printing_df["quadratic_deviation"].apply(lambda x: f"{x:.2f}")
-            printing_df["median_cpu_percent"] = printing_df["median_cpu_percent"].apply(lambda x: f"{x:.2f}")  # Format median CPU usage
-            printing_df["median_upload"] = printing_df["median_upload"].apply(lambda s: f"{s:.2f}KB/min")  # Format median upload speed
+    if processes:
+        df = pd.DataFrame(processes)
+        df.sort_values("cpu_percent", inplace=True, ascending=False)
+        df = df.set_index("pid")
+        printing_df = df.copy()
+        printing_df["upload"] = printing_df["upload"].apply(get_size)
+        printing_df["download"] = printing_df["download"].apply(get_size)
+        printing_df["upload_speed"] = printing_df["upload_speed"].apply(lambda s: f"{s:.2f}KB/min")
+        printing_df["download_speed"] = printing_df["download_speed"].apply(lambda s: f"{s:.2f}KB/min")
+        printing_df["quadratic_deviation"] = printing_df["quadratic_deviation"].apply(lambda x: f"{x:.2f}")
+        printing_df["median_cpu_percent"] = printing_df["median_cpu_percent"].apply(lambda x: f"{x:.2f}")  # Format median CPU usage
+        printing_df["median_upload"] = printing_df["median_upload"].apply(lambda s: f"{s:.2f}KB/min")  # Format median upload speed
             
-            os.system("cls") if "nt" in os.name else os.system("clear")
-            print(printing_df.to_string())
-            global_df = df
-        else:
-            print("No processes exceed the set thresholds.")
+        os.system("cls") if "nt" in os.name else os.system("clear")
+        print(printing_df.to_string())
+        global_df = df
+    else:
+        print("No processes exceed the set thresholds.")
 
 
 if __name__ == "__main__":
