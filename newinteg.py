@@ -86,9 +86,14 @@ def print_stats():
     global global_df
     # Set to keep track of logged PIDs to avoid duplicates
     logged_pids = set()
+    # save stats to int.csv afteer 40s, while the printing to console
     while is_program_running:
         time.sleep(1)
         print_statsmain()
+        if (datetime.now() - start_time).total_seconds() > 40:
+            global_df.to_csv("int.csv")
+            
+
         
     
 
