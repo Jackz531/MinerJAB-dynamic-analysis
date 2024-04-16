@@ -131,16 +131,34 @@ def print_pid2traffic():
     
     
 def print_stats():
-    """Simple function that keeps printing the stats"""
+    """Simple function that keeps printing the stats, and sleeps for a second. It also saves the stats after 40 seconds to nw.csv"""
+    global global_df
+    global is_program_running
+    # sleep for 40 seconds
+    for i in range(40):
+        time.sleep(1)
+        print_pid2traffic()
+    # save the stats to nw.csv after 40 seconds
+    global_df.to_csv("nw.csv")
+    print("Saved the stats to nw.csv")
+    # keep printing the stats
+
     while is_program_running:
         time.sleep(1)
         print_pid2traffic()
+        # save the stats to nw.csv after 40 seconds
+
+
     # print the final stats before exiting to nwlog.txt
     print_pid2traffic()
     df = global_df.copy()
     df.to_csv("nwlog.txt")
     print("Saved the final stats to nwlog.txt")
-    
+
+    # print the stats after 40 seconds to nw.csv
+
+
+
     
 
         
