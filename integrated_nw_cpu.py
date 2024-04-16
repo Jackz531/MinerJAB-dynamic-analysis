@@ -11,7 +11,7 @@ import numpy as np
 import warnings
 
 
-
+start_time = datetime.now()
 # Filter out the specific RuntimeWarning
 warnings.filterwarnings("ignore", message="Mean of empty slice", category=RuntimeWarning)
 warnings.filterwarnings("ignore", message="invalid value encountered in scalar divide", category=RuntimeWarning)
@@ -117,12 +117,14 @@ def print_stats():
                         quadratic_deviation = math.sqrt(squaresum_mean - math.pow(mean, 2))
 
                     traffic = pid2traffic.get(process.pid, [0, 0])
-                    upload_speed = (traffic[0] * 60) / 1024  # Convert to KB/min
+                    elapsed_time = (datetime.now() - start_time).total_seconds()
+                    upload_speed = (traffic[0] / elapsed_time) * (60 / 1024)  # Convert to KB/min
+                    
                     if upload_speed>0:
                         pid2upload_speed_values[process.pid].append(upload_speed)
                     # Calculate median upload speed
                     median_upload_speed = np.median(pid2upload_speed_values[process.pid])
-                    download_speed = (traffic[1] * 60) / 1024  # Convert to KB/min
+                    download_speed = (traffic[1] / elapsed_time) * (60 / 1024) # Convert to KB/min
                     processes.append({
                         'pid': process.pid,
                         'name': process.name(),
@@ -174,13 +176,4 @@ if __name__ == "__main__":
     connections_thread.start()
     print("Started sniffing")
     sniff(prn=process_packet, store=False)
-    # is_program_running = False
-    # #stop the code and threads after 1 minute
-    time.sleep(60)
     is_program_running = False
-    printing_thread.join()
-    connections_thread.join()
-    print("Stopped sniffing")
-    # Save the collected data to a CSV file
-    global_df.to_csv('train_data.csv', index=False)
-    print("Data saved to train_data.csv")
