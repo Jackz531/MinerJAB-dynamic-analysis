@@ -1,13 +1,27 @@
 import subprocess
+import pandas as pd
+import os
 
-# Define a function to read PIDs from a file and execute ListDlls.exe for each PID
-def execute_listdlls_for_pids(file_path):
-    with open(file_path, 'r') as file:
-        for pid in file:
-            pid = pid.strip()  # Remove any leading/trailing whitespace
-            if pid.isdigit():  # Check if the line is a valid PID
-                command = f"ListDlls.exe {pid} > {pid}Dlls.txt"
-                subprocess.run(command, shell=True)
+# Read the existing int.csv file
+df = pd.read_csv("int.csv")
 
-# Call the function with the path to log.txt
-execute_listdlls_for_pids("log.txt")
+# Read the PIDs from log.txt and store them in a set
+valid_pids = set()
+with open("log.txt", "r") as log_file:
+    for line in log_file:
+        pid = line.strip()
+        if pid.isdigit():
+            valid_pids.add(int(pid))  # Convert to integer
+
+# Filter rows based on valid PIDs
+df_filtered = df[df['pid'].isin(valid_pids)]
+
+# Execute ListDlls.exe for each valid PID and redirect output to a text file
+for pid in valid_pids:
+    command = f"ListDlls.exe {pid} > {pid}Dlls.txt"
+    subprocess.run(command, shell=True)
+
+# Write the filtered rows back to int.csv
+df_filtered.to_csv("int.csv", index=False)
+
+print("Filtered int.csv based on log.txt and executed ListDlls for each PID.")
