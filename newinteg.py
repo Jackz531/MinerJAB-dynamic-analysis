@@ -9,7 +9,7 @@ import time
 import math
 import numpy as np
 import warnings
-
+import subprocess
 
 start_time = 0
 # Filter out the specific RuntimeWarning
@@ -93,6 +93,8 @@ def print_stats():
         if (datetime.now() - start_time).total_seconds() > 40:
             global_df.to_csv("int.csv")
             is_program_running=False
+            subprocess.run(['python', 'libcalls.py'])
+            
             
 
         
@@ -153,6 +155,13 @@ def print_statsmain():
                     })
                     
                     # Log the PID of the process if CPU utilization is above the threshold and not already logged
+                    #create log.txt if it is not there.
+                    if not os.path.exists("log.txt"):
+                        with open("log.txt", "w"):
+                            pass
+                        
+
+                     
                     if cpu_percent_per_core >= cpu_threshold and process.pid not in logged_pids and process.pid != 0:
                         with open("log.txt", "a") as log_file:
                             log_file.write(f"{process.pid}\n")
