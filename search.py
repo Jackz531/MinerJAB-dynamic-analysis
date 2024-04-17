@@ -1,6 +1,7 @@
 import os
 import re
 import psutil
+import csv
 
 # Define the keywords to search for
 keywords = [
@@ -21,10 +22,15 @@ def get_process_name(pid):
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         return "Unknown"
 
-# Check if results.txt exists, if not, create it and write the header
-if not os.path.exists('results.txt'):
-    with open('results.txt', 'w') as log_file:
-        log_file.write("PID\t\tPname\t\tNumber of calls\n")
+# Read the existing CSV file and add a new column
+csv_rows = []
+if os.path.exists('int.csv'):
+    with open('int.csv', mode='r') as infile:
+        reader = csv.DictReader(infile)
+        for row in reader:
+            row["Number of crypto API calls"] = 0  # Initialize the new column with 0
+            csv_rows.append(row)
+        fieldnames = reader.fieldnames + ["Number of crypto API calls"]  # Add new column to fieldnames
 
 # Iterate over each file in the current directory
 for filename in os.listdir('.'):
@@ -44,11 +50,16 @@ for filename in os.listdir('.'):
                     keyword_counts[keyword] = content.count(keyword_lower)
             # Calculate the total occurrences of all keywords
             total_occurrences = sum(keyword_counts.values())
-            # Get the process name using the PID
-            process_name = get_process_name(pid)
-            # Append the results to results.txt
-            with open('results.txt', 'a') as log_file:
-                log_file.write(f"{pid}\t{process_name}\t{total_occurrences}\n")
+            # Update the corresponding row in csv_rows
+            for row in csv_rows:
+                if row["pid"] == pid:
+                    row["Number of crypto API calls"] = total_occurrences
+
+# Write the updated data back to int.csv
+with open('int.csv', mode='w', newline='') as outfile:
+    writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(csv_rows)
 
 # Print a success message
-print("The search is complete. The results have been saved to results.txt.")
+print("The CSV has been updated with the number of crypto API calls.")
