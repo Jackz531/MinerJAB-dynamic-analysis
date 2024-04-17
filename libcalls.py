@@ -25,3 +25,6 @@ for pid in valid_pids:
 df_filtered.to_csv("int.csv", index=False)
 
 print("Filtered int.csv based on log.txt and executed ListDlls for each PID.")
+
+
+subprocess.run(['python', 'search.py'])
