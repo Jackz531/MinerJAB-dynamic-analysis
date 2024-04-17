@@ -11,7 +11,7 @@ import numpy as np
 import warnings
 
 
-start_time = datetime.now()
+start_time = 0
 # Filter out the specific RuntimeWarning
 warnings.filterwarnings("ignore", message="Mean of empty slice", category=RuntimeWarning)
 warnings.filterwarnings("ignore", message="invalid value encountered in scalar divide", category=RuntimeWarning)
@@ -188,5 +188,6 @@ if __name__ == "__main__":
 
     connections_thread.start()
     print("Started sniffing")
+    start_time=datetime.now()
     sniff(prn=process_packet, store=False)
     is_program_running = False
