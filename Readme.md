@@ -16,6 +16,6 @@ The project consists of several Python scripts each serving a specific purpose:
 To use these scripts, simply run them with Python. For example:
     
     ```bash
-    python cpu_usage.py
+    pip install -r  "requirements.txt"
     ```
     
