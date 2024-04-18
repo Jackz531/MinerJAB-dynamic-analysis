@@ -29,7 +29,7 @@ pid2cpu_usage_sum = defaultdict(int)
 # A dictionary to map each process ID (PID) to the sum of squares of CPU usage
 pid2cpu_usage_squaresum = defaultdict(int)
 pid2cpu_usage_values = defaultdict(list)
-pid2upload_speed_values = defaultdict(list)
+pid2network_rate_values = defaultdict(list)
 
 pid2count = defaultdict(int)
 
@@ -90,21 +90,20 @@ def print_stats():
     while is_program_running:
         time.sleep(1)
         print_statsmain()
-        if (datetime.now() - start_time).total_seconds() > 40:
-            global_df.to_csv("int.csv")
-            is_program_running=False
-            subprocess.run(['python', 'libcalls.py'])
+        # if (datetime.now() - start_time).total_seconds() > 40:
+        #     global_df.to_csv("int.csv")
+        #     is_program_running=False
+        #     subprocess.run(['python', 'libcalls.py'])
             
             
 
-        
-    
 
 def print_statsmain():
     global global_df
     logged_pids = set()
     processes = []
     for process in psutil.process_iter(['pid', 'name']):
+            
             try:
                 cpu_percent_per_core = get_cpu_percent_per_core(process)
                 if cpu_percent_per_core > 0:  # Only store non-zero CPU usage values
@@ -132,14 +131,26 @@ def print_statsmain():
                         quadratic_deviation = math.sqrt(squaresum_mean - math.pow(mean, 2))
 
                     traffic = pid2traffic.get(process.pid, [0, 0])
-                    elapsed_time = (datetime.now() - start_time).total_seconds()
-                    upload_speed = (traffic[0] / elapsed_time) * (60 / 1024)  # Convert to KB/min
-                    
-                    if upload_speed>0:
-                        pid2upload_speed_values[process.pid].append(upload_speed)
-                    # Calculate median upload speed
-                    median_upload_speed = np.median(pid2upload_speed_values[process.pid])
-                    download_speed = (traffic[1] / elapsed_time) * (60 / 1024) # Convert to KB/min
+                    # print("\n",process.pid,traffic[0],"\n")
+                    try:
+            # calculate the upload and download speeds by simply subtracting the old stats from the new stats
+                        upload_speed = traffic[0] - global_df.at[process.pid, "Upload"]
+                        download_speed = traffic[1] - global_df.at[process.pid, "Download"]
+                    except (KeyError, AttributeError):
+                        # If it's the first time running this function, then the speed is the current traffic
+                        # You can think of it as if old traffic is 0
+                        upload_speed = traffic[0]
+                        download_speed = traffic[1]
+
+                    # elapsed_time = (datetime.now() - start_time).total_seconds()
+                    # upload_speed = (traffic[0] / elapsed_time) * (60 / 1024)  # Convert to KB/min
+                    network_rate = upload_speed + download_speed
+                    if network_rate>0:
+                        pid2network_rate_values[process.pid].append(network_rate)
+                    # Calculate median network rate
+                    median_network_rate = np.median(pid2network_rate_values[process.pid])
+
+                    # download_speed = (traffic[1] / elapsed_time) * (60 / 1024) # Convert to KB/min
                     processes.append({
                         'pid': process.pid,
                         'name': process.name(),
@@ -150,7 +161,7 @@ def print_statsmain():
                         'upload': traffic[0],
                         'download': traffic[1],
                         'upload_speed': upload_speed,
-                        'median_upload': median_upload_speed,  # Add median upload speed metric
+                        'median_network_rate': median_network_rate,  # Add median network metric
                         'download_speed': download_speed
                     })
                     
@@ -160,8 +171,6 @@ def print_statsmain():
                         with open("log.txt", "w"):
                             pass
                         
-
-                     
                     if cpu_percent_per_core >= cpu_threshold and process.pid not in logged_pids and process.pid != 0:
                         with open("log.txt", "a") as log_file:
                             log_file.write(f"{process.pid}\n")
@@ -181,7 +190,7 @@ def print_statsmain():
         printing_df["download_speed"] = printing_df["download_speed"].apply(lambda s: f"{s:.2f}KB/min")
         printing_df["quadratic_deviation"] = printing_df["quadratic_deviation"].apply(lambda x: f"{x:.2f}")
         printing_df["median_cpu_percent"] = printing_df["median_cpu_percent"].apply(lambda x: f"{x:.2f}")  # Format median CPU usage
-        printing_df["median_upload"] = printing_df["median_upload"].apply(lambda s: f"{s:.2f}KB/min")  # Format median upload speed
+        printing_df["median_network_rate"] = printing_df["median_network_rate"].apply(lambda s: f"{s:.2f}KB/min")  # Format median upload speed
             
         os.system("cls") if "nt" in os.name else os.system("clear")
         print(printing_df.to_string())

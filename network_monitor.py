@@ -71,6 +71,7 @@ def print_pid2traffic():
     for pid, traffic in pid2traffic.items():
         # `pid` is an integer that represents the process ID
         # `traffic` is a list of two values: total Upload and Download size in bytes
+        # print("\n"+ traffic[0]+ "\n")
         try:
             # get the process object from psutil
             p = psutil.Process(pid)
