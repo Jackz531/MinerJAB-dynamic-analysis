@@ -21,6 +21,7 @@ all_macs = {iface.mac for iface in ifaces.values()}
 # A dictionary to map each connection to its corresponding process ID (PID)
 connection2pid = {}
 
+
 # A dictionary to map each process ID (PID) to total Upload (0) and Download (1) traffic
 pid2traffic = defaultdict(lambda: [0, 0])
 
@@ -35,6 +36,9 @@ pid2count = defaultdict(int)
 
 # The global Pandas DataFrame that's used to track previous traffic stats
 global_df = None
+
+printing_thread = None
+connections_thread = None
 
 # Global boolean for program status
 is_program_running = True
@@ -102,6 +106,8 @@ def print_stats():
             is_program_running=False
             
 
+printing_thread = Thread(target=print_stats)
+connections_thread = Thread(target=get_connections)
 
 def print_statsmain():
     global global_df
@@ -205,10 +211,11 @@ def print_statsmain():
         print("No processes exceed the set thresholds.")
 
 
+
 if __name__ == "__main__":
-    printing_thread = Thread(target=print_stats)
+    
     printing_thread.start()
-    connections_thread = Thread(target=get_connections)
+    
 
     connections_thread.start()
     print("Started sniffing")

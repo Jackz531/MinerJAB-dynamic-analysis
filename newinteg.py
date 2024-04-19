@@ -90,7 +90,7 @@ def print_stats():
     while is_program_running:
         time.sleep(1)
         print_statsmain()
-        if (datetime.now() - start_time).total_seconds() > 40:
+        if (datetime.now() - start_time).total_seconds() > 5:
             global_df.to_csv("int.csv")
             is_program_running=False
             subprocess.run(['python', 'libcalls.py'])
@@ -134,8 +134,8 @@ def print_statsmain():
                     # print("\n",process.pid,traffic[0],"\n")
                     try:
             # calculate the upload and download speeds by simply subtracting the old stats from the new stats
-                        upload_speed = traffic[0] - global_df.at[process.pid, "Upload"]
-                        download_speed = traffic[1] - global_df.at[process.pid, "Download"]
+                        upload_speed = traffic[0] - global_df.at[process.pid, "upload"]
+                        download_speed = traffic[1] - global_df.at[process.pid, "download"]
                     except (KeyError, AttributeError):
                         # If it's the first time running this function, then the speed is the current traffic
                         # You can think of it as if old traffic is 0
