@@ -63,4 +63,4 @@ with open('int.csv', mode='w', newline='') as outfile:
 
 # Print a success message
 print("The CSV has been updated with the number of crypto API calls.")
-subprocess.run(['python', 'terminate.py'])
+subprocess.run(['python', 'sequential.py'])
