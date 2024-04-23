@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 # Load your training data from a CSV file
-train_data = pd.read_csv('train_data.csv')
+train_data = pd.read_csv('train_data3.csv')
 
 # Encode the 'Cryptojacker or not' column to numerical values
 label_encoder = LabelEncoder()
@@ -16,7 +16,7 @@ X_train = train_data.drop(['pid', 'Cryptojacker or not'], axis=1)
 y_train = train_data['Cryptojacker or not']
 
 # Initialize the Random Forest Classifier
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf = RandomForestClassifier(n_estimators=50, max_depth=5, min_samples_split=5, min_samples_leaf=2, random_state=42)
 
 # Train the classifier
 clf.fit(X_train, y_train)
