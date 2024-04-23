@@ -40,8 +40,8 @@ global_df = None
 is_program_running = True
 
 # User-defined thresholds
-cpu_threshold = float(input("Enter the CPU utilization threshold (in %): "))
-ram_threshold = float(input("Enter the RAM usage threshold (in MB): "))
+cpu_threshold = 30
+ram_threshold = 100
 
 def get_size(bytes):
     """
