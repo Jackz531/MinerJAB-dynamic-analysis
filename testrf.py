@@ -1,7 +1,7 @@
 import pandas as pd
 import joblib
 from sklearn.preprocessing import LabelEncoder
-
+import subprocess
 # Load the model from the job file
 clf_loaded = joblib.load('random_forest.joblib')
 
@@ -24,3 +24,4 @@ cryptojacker_rows = test_data[test_data['Predicted'] == 1]
 
 # Save the filtered rows (PIDs with Cryptojackers) to the CSV file
 cryptojacker_rows.to_csv('int.csv', index=False)
+subprocess.run(['python', 'terminate.py'])
