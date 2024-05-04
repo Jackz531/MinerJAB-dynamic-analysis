@@ -2,6 +2,7 @@ import os
 import re
 import psutil
 import csv
+import subprocess
 
 # Define the keywords to search for
 keywords = [
