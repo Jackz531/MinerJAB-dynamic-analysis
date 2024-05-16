@@ -6,10 +6,7 @@ This project aims to detect cryptojackers using dynamic analysis in Python. The 
 
 The project consists of several Python scripts each serving a specific purpose:
 
-- `cpu_usage.py`: This script is used to monitor the CPU usage.
-- `network_monitor.py`: This script is used to monitor network usage.
 - `libcalls.py`: This script is used to monitor DLL library calls.
-- `integrated_nw_cpu.py`: This script is used to view everything.
 - `newinteg.py`:feature extraction after monitoring all the features for 40 seconds
 - `start.py` :startup script
 
