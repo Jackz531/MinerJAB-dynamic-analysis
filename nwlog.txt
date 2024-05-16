@@ -1,3 +1,0 @@
-pid,name,create_time,Upload,Download,Upload Speed,Download Speed
-3660,brave.exe,2024-04-18 14:31:26.018518,11934,78207,0,0
-12476,Code.exe,2024-04-18 14:35:01.171364,0,60,0,0
