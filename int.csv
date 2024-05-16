@@ -1,2 +1,0 @@
-pid,name,cpu_percent,median_cpu_percent,quadratic_deviation,ram_usage,upload,download,upload_speed,median_network_rate,download_speed,Number of crypto API calls
-12608,vbc.exe,82.55,81.75,8.91028899643548,2238.7890625,785,1696,0,1240.5,0,3
